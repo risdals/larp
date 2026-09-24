@@ -1,0 +1,113 @@
+// ==UserScript==
+// @name         UserLARP
+// @namespace    https://github.com/risdals/userlarp
+// @version      1.0
+// @description  Locally replace Roblox usernames on your screen.
+// @match        https://www.roblox.com/*
+// @grant        none
+// ==/UserScript==
+
+(() => {
+    "use strict";
+
+    let targetUsername = "";
+    let fakeUsername = "";
+
+    // Create the UserLARP panel
+    const panel = document.createElement("div");
+
+    panel.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 999999;
+        width: 260px;
+        padding: 15px;
+        background: #181818;
+        color: white;
+        border: 1px solid #444;
+        border-radius: 10px;
+        font-family: Arial, sans-serif;
+        box-shadow: 0 4px 20px rgba(0,0,0,.4);
+    `;
+
+    panel.innerHTML = `
+        <div style="font-size:18px;font-weight:bold;margin-bottom:12px;">
+            UserLARP
+        </div>
+
+        <input id="larpTarget"
+            placeholder="Username to replace"
+            style="width:100%;box-sizing:border-box;margin-bottom:8px;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:white;">
+
+        <input id="larpFake"
+            placeholder="Fake username"
+            style="width:100%;box-sizing:border-box;margin-bottom:10px;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:white;">
+
+        <button id="larpApply"
+            style="width:100%;padding:8px;border:0;border-radius:6px;cursor:pointer;">
+            Apply
+        </button>
+
+        <button id="larpReset"
+            style="width:100%;padding:8px;margin-top:6px;border:0;border-radius:6px;cursor:pointer;">
+            Reset
+        </button>
+    `;
+
+    document.body.appendChild(panel);
+
+    const targetInput = document.getElementById("larpTarget");
+    const fakeInput = document.getElementById("larpFake");
+    const applyButton = document.getElementById("larpApply");
+    const resetButton = document.getElementById("larpReset");
+
+    function replaceNames() {
+        if (!targetUsername || !fakeUsername) return;
+
+        const walker = document.createTreeWalker(
+            document.body,
+            NodeFilter.SHOW_TEXT
+        );
+
+        const nodes = [];
+        let node;
+
+        while ((node = walker.nextNode())) {
+            if (
+                node.parentElement &&
+                !panel.contains(node.parentElement) &&
+                node.nodeValue.includes(targetUsername)
+            ) {
+                nodes.push(node);
+            }
+        }
+
+        for (const textNode of nodes) {
+            textNode.nodeValue = textNode.nodeValue.split(targetUsername).join(fakeUsername);
+        }
+    }
+
+    applyButton.addEventListener("click", () => {
+        targetUsername = targetInput.value.trim();
+        fakeUsername = fakeInput.value.trim();
+
+        if (!targetUsername || !fakeUsername) return;
+
+        replaceNames();
+    });
+
+    resetButton.addEventListener("click", () => {
+        location.reload();
+    });
+
+    // Roblox dynamically changes its pages, so watch for new content.
+    const observer = new MutationObserver(() => {
+        replaceNames();
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+})();
